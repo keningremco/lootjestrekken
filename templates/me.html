@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 {% block content %}
 <h1>Hoi {{ user.name }}</h1>
@@ -6,13 +7,21 @@
 <section>
   <h2>Jouw lootje</h2>
   {% if user.revealed %}
-    <p class="big">{{ user.target.name }}</p>
-    {% if user.target.wish %}
-      <p>Dit wil {{ user.target.name }} graag:</p>
-      <blockquote>{{ user.target.wish }}</blockquote>
-    {% else %}
-      <p class="muted">{{ user.target.name }} heeft nog niets ingevuld. Kom later nog eens terug.</p>
-    {% endif %}
+
+    <button type="button" onclick="toggleLot()" id="toggleButton">
+      Hide lot
+    </button>
+
+    <div id="lotContent">
+      <p class="big">{{ user.target.name }}</p>
+      {% if user.target.wish %}
+        <p>Dit wil {{ user.target.name }} graag:</p>
+        <blockquote>{{ user.target.wish }}</blockquote>
+      {% else %}
+        <p class="muted">{{ user.target.name }} heeft nog niets ingevuld. Kom later nog eens terug.</p>
+      {% endif %}
+    </div>
+
   {% else %}
     <form method="post" action="{{ url_for('draw') }}">
       <button>Trek een lootje</button>
@@ -29,4 +38,20 @@
     <p><button>Opslaan</button></p>
   </form>
 </section>
+
+<script>
+function toggleLot() {
+  const content = document.getElementById("lotContent");
+  const button = document.getElementById("toggleButton");
+
+  if (content.style.display === "none") {
+    content.style.display = "block";
+    button.textContent = "Hide lot";
+  } else {
+    content.style.display = "none";
+    button.textContent = "Show lot";
+  }
+}
+</script>
+
 {% endblock %}

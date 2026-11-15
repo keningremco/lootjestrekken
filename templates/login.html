@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Lootjes trekken</h1>
+<p class="muted">Vul de 6-cijferige code in die je van de organisator kreeg.</p>
+<section>
+  <form method="post">
+    <input class="code" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+           autocomplete="off" placeholder="000000" aria-label="Je code" required autofocus>
+    <button style="width:100%">Inloggen</button>
+  </form>
+</section>
+<p class="small"><a href="{{ url_for('admin_login') }}">Organisator? Log hier in.</a></p>
+{% endblock %}

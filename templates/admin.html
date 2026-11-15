@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Beheer</h1>
+<p class="muted">Je ziet hier wie er meedoet en de inlogcodes. Wie wie heeft getrokken is voor niemand in te zien.</p>
+
+<section>
+  <h2>Nieuwe groep</h2>
+  <form method="post" action="{{ url_for('add_group') }}" class="row">
+    <input name="name" maxlength="100" placeholder="Bijv. Familie Jansen" aria-label="Groepsnaam" required>
+    <button>Groep maken</button>
+  </form>
+</section>
+
+{% for g in groups %}
+<section>
+  <div class="row between">
+    <h2>{{ g.name }}</h2>
+    <span class="tag">{{ 'Lootjes verdeeld' if g.drawn else 'Nog niet getrokken' }}</span>
+  </div>
+
+  {% if g.members %}
+  <table>
+    <thead><tr><th>Naam</th><th>Code</th><th>Lootje bekeken</th><th></th></tr></thead>
+    <tbody>
+    {% for m in g.members %}
+      <tr>
+        <td>{{ m.name }}</td>
+        <td class="num">{{ m.code }}</td>
+        <td>{{ 'Ja' if m.revealed else 'Nee' }}</td>
+        <td>
+          {% if not g.drawn %}
+          <form method="post" action="{{ url_for('delete_user', user_id=m.id) }}"
+                onsubmit="return confirm('{{ m.name|e }} verwijderen?')">
+            <button class="danger">Verwijderen</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">Nog geen deelnemers. Voeg hieronder de eerste toe.</p>
+  {% endif %}
+
+  {% if not g.drawn %}
+  <form method="post" action="{{ url_for('add_user') }}" class="row">
+    <input type="hidden" name="group_id" value="{{ g.id }}">
+    <input name="name" maxlength="100" placeholder="Naam deelnemer" aria-label="Naam deelnemer" required>
+    <button>Deelnemer toevoegen</button>
+  </form>
+  {% endif %}
+
+  <div class="row" style="margin-top:1rem">
+    {% if g.drawn %}
+    <form method="post" action="{{ url_for('reset_group', group_id=g.id) }}"
+          onsubmit="return confirm('Alle getrokken lootjes in deze groep worden gewist. Doorgaan?')">
+      <button class="quiet">Trekking resetten</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{{ url_for('delete_group', group_id=g.id) }}"
+          onsubmit="return confirm('Groep en alle deelnemers verwijderen?')">
+      <button class="danger">Groep verwijderen</button>
+    </form>
+  </div>
+</section>
+{% else %}
+<p class="muted" style="margin-top:1.5rem">Nog geen groepen. Maak hierboven de eerste aan.</p>
+{% endfor %}
+{% endblock %}

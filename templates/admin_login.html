@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Beheer</h1>
+<section>
+  <form method="post">
+    <label for="pw">Wachtwoord</label>
+    <input id="pw" type="password" name="password" required autofocus>
+    <p><button>Inloggen</button></p>
+  </form>
+</section>
+<p class="small"><a href="{{ url_for('login') }}">Terug naar de deelnemerslogin</a></p>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Hoi {{ user.name }}</h1>
+<p class="muted">Groep: {{ user.group.name }}</p>
+
+<section>
+  <h2>Jouw lootje</h2>
+  {% if user.revealed %}
+    <p class="big">{{ user.target.name }}</p>
+    {% if user.target.wish %}
+      <p>Dit wil {{ user.target.name }} graag:</p>
+      <blockquote>{{ user.target.wish }}</blockquote>
+    {% else %}
+      <p class="muted">{{ user.target.name }} heeft nog niets ingevuld. Kom later nog eens terug.</p>
+    {% endif %}
+  {% else %}
+    <form method="post" action="{{ url_for('draw') }}">
+      <button>Trek een lootje</button>
+    </form>
+    <p class="small">Je ziet meteen wie je hebt getrokken. Alleen jij kunt dit zien.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Jouw verlanglijstje</h2>
+  <form method="post" action="{{ url_for('save_wish') }}">
+    <textarea name="wish" rows="5" maxlength="1000" aria-label="Wat wil je graag krijgen?"
+              placeholder="Wat wil je graag krijgen?">{{ user.wish }}</textarea>
+    <p><button>Opslaan</button></p>
+  </form>
+</section>
+{% endblock %}

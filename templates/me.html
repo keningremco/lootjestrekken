@@ -9,7 +9,7 @@
   {% if user.revealed %}
 
     <button type="button" onclick="toggleLot()" id="toggleButton">
-      Hide lot
+      Verberg lootje
     </button>
 
     <div id="lotContent">
@@ -46,10 +46,10 @@ function toggleLot() {
 
   if (content.style.display === "none") {
     content.style.display = "block";
-    button.textContent = "Hide lot";
+    button.textContent = "Verberg lootje";
   } else {
     content.style.display = "none";
-    button.textContent = "Show lot";
+    button.textContent = "Toon lootje";
   }
 }
 </script>

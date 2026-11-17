@@ -3,6 +3,8 @@ import random
 import secrets
 import time
 from functools import wraps
+from datetime import datetime, timezone
+
 
 from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, session, url_for
@@ -57,6 +59,19 @@ class Participant(db.Model):
     group = db.relationship("Group", back_populates="members", foreign_keys=[group_id])
     target = db.relationship("Participant", remote_side=[id], foreign_keys=[target_id])
 
+class Note(db.Model):
+    """Anoniem bericht tussen een gever en de ontvanger van diens lootje."""
+    __tablename__ = "notes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    giver_id = db.Column(db.Integer, db.ForeignKey("participants.id"), nullable=False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey("participants.id"), nullable=False)
+    from_giver = db.Column(db.Boolean, nullable=False)  # True = gever -> ontvanger, False = antwoord
+    text = db.Column(db.Text, nullable=False)
+    created_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
+
 
 def ensure_tables():
     """Controleert of alle tabellen bestaan en maakt de ontbrekende aan."""
@@ -85,6 +100,13 @@ def new_code():
         if not Participant.query.filter_by(code=code).first():
             return code
 
+
+def delete_notes(member_ids):
+    """Verwijdert alle notities waar deze deelnemers bij betrokken zijn."""
+    if member_ids:
+        Note.query.filter(
+            db.or_(Note.giver_id.in_(member_ids), Note.receiver_id.in_(member_ids))
+        ).delete(synchronize_session=False)
 
 def make_assignments(group):
     """Zet de leden in willekeurige volgorde in één cirkel: iedereen trekt de volgende.
@@ -143,7 +165,58 @@ def login():
 @app.route("/mijn")
 @user_required
 def me(user):
-    return render_template("me.html", user=user)
+    order = (Note.created_at, Note.id)
+    sent_thread = []
+    if user.revealed and user.target_id:
+        sent_thread = (
+            Note.query.filter_by(giver_id=user.id, receiver_id=user.target_id)
+            .order_by(*order)
+            .all()
+        )
+    received_thread = Note.query.filter_by(receiver_id=user.id).order_by(*order).all()
+    return render_template(
+        "me.html", user=user, sent_thread=sent_thread, received_thread=received_thread
+    )
+
+
+@app.post("/mijn/notitie")
+@user_required
+def send_note(user):
+    """Gever schrijft een anonieme notitie bij zijn/haar lootje."""
+    text = request.form.get("text", "").strip()[:500]
+    if not user.revealed or not user.target_id:
+        flash("Trek eerst een lootje.", "error")
+    elif not text:
+        flash("Schrijf eerst een bericht.", "error")
+    else:
+        db.session.add(
+            Note(giver_id=user.id, receiver_id=user.target_id, from_giver=True, text=text)
+        )
+        db.session.commit()
+        flash("Je bericht is anoniem verstuurd.", "ok")
+    return redirect(url_for("me"))
+
+
+@app.post("/mijn/antwoord")
+@user_required
+def reply_note(user):
+    """Ontvanger antwoordt anoniem op berichten van zijn/haar gever."""
+    text = request.form.get("text", "").strip()[:500]
+    giver = Participant.query.filter_by(target_id=user.id).first()
+    got_note = giver and Note.query.filter_by(
+        giver_id=giver.id, receiver_id=user.id, from_giver=True
+    ).first()
+    if not got_note:
+        flash("Je kunt pas antwoorden als je een bericht hebt gekregen.", "error")
+    elif not text:
+        flash("Schrijf eerst een bericht.", "error")
+    else:
+        db.session.add(
+            Note(giver_id=giver.id, receiver_id=user.id, from_giver=False, text=text)
+        )
+        db.session.commit()
+        flash("Je antwoord is anoniem verstuurd.", "ok")
+    return redirect(url_for("me"))
 
 
 @app.post("/mijn/wens")
@@ -214,6 +287,7 @@ def add_group():
 @admin_required
 def delete_group(group_id):
     group = db.get_or_404(Group, group_id)
+    delete_notes([m.id for m in group.members])
     for member in group.members:
         member.target_id = None
     db.session.flush()
@@ -228,6 +302,7 @@ def delete_group(group_id):
 @admin_required
 def reset_group(group_id):
     group = db.get_or_404(Group, group_id)
+    delete_notes([m.id for m in group.members])
     for member in group.members:
         member.target_id = None
         member.revealed = False

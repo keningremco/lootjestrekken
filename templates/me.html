@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block content %}
 <h1>Hoi {{ user.name }}</h1>
@@ -20,6 +19,23 @@
       {% else %}
         <p class="muted">{{ user.target.name }} heeft nog niets ingevuld. Kom later nog eens terug.</p>
       {% endif %}
+
+      <h3>Anonieme berichten aan {{ user.target.name }}</h3>
+      <p class="small">{{ user.target.name }} ziet niet van wie je bericht komt, maar kan wel anoniem antwoorden.</p>
+
+      {% for note in sent_thread %}
+        <div class="note {{ 'note-me' if note.from_giver else 'note-them' }}">
+          <strong>{{ 'Jij' if note.from_giver else user.target.name }}:</strong>
+          {{ note.text }}
+        </div>
+      {% endfor %}
+
+      <form method="post" action="{{ url_for('send_note') }}">
+        <textarea name="text" rows="3" maxlength="500" required
+                  aria-label="Bericht aan je lootje"
+                  placeholder="Bijv. welke maat heb je? Of een tip voor het cadeau?"></textarea>
+        <p><button>Verstuur anoniem</button></p>
+      </form>
     </div>
 
   {% else %}
@@ -38,6 +54,33 @@
     <p><button>Opslaan</button></p>
   </form>
 </section>
+
+{% if received_thread %}
+<section>
+  <h2>Berichten van je geheime gever</h2>
+  <p class="small">Iemand heeft jou getrokken en wil je iets vragen of vertellen. Je weet niet wie, en je antwoord is ook anoniem.</p>
+
+  {% for note in received_thread %}
+    <div class="note {{ 'note-them' if note.from_giver else 'note-me' }}">
+      <strong>{{ 'Je geheime gever' if note.from_giver else 'Jij' }}:</strong>
+      {{ note.text }}
+    </div>
+  {% endfor %}
+
+  <form method="post" action="{{ url_for('reply_note') }}">
+    <textarea name="text" rows="3" maxlength="500" required
+              aria-label="Antwoord aan je geheime gever"
+              placeholder="Typ je antwoord…"></textarea>
+    <p><button>Antwoord anoniem</button></p>
+  </form>
+</section>
+{% endif %}
+
+<style>
+  .note { padding: .5rem .75rem; margin: .5rem 0; border-radius: 8px; white-space: pre-wrap; }
+  .note-me { background: rgba(127, 127, 127, .15); }
+  .note-them { background: rgba(127, 127, 127, .3); }
+</style>
 
 <script>
 function toggleLot() {
